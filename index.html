@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>四川文旅知识图谱系统 · MVP</title>
+<style>
+:root{
+  --bg:#0d1220; --panel:#141c30; --panel2:#1b2440; --line:#28344f;
+  --text:#e9e7e2; --muted:#98a5bd; --gold:#e8b04b; --red:#e05656; --teal:#2ec4b6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;font-size:14px;line-height:1.65;display:flex;flex-direction:column}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 22px 10px;border-bottom:1px solid var(--line)}
+header h1{font-size:20px;font-family:"Noto Serif SC","STSong","SimSun",serif;letter-spacing:1px}
+header h1 .gd{color:var(--gold)}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.biz{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.biz span{font-size:11px;padding:2px 10px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}
+.biz span.hot{border-color:rgba(232,176,75,.55);color:var(--gold)}
+.badge{white-space:nowrap;font-size:12px;color:var(--bg);background:var(--gold);border-radius:6px;padding:4px 12px;font-weight:600}
+nav{display:flex;gap:4px;padding:10px 22px 0;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;color:var(--muted);font-size:14px;padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600}
+main{flex:1;overflow:hidden}
+.panel{display:none;height:100%;overflow:auto;padding:14px 22px 20px}
+.panel.active{display:block}
+/* ---------- 图谱总览 ---------- */
+#tab-graph{display:none;gap:14px;padding:14px 22px 20px}
+#tab-graph.active{display:flex}
+aside{width:320px;min-width:280px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{font-size:13px;color:var(--gold);margin-bottom:8px;font-weight:600;letter-spacing:.5px}
+.searchrow{display:flex;gap:8px}
+.searchrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 10px;font-size:13px;outline:none}
+.searchrow input:focus{border-color:var(--gold)}
+.searchrow button{background:var(--gold);border:none;border-radius:8px;color:#1a1408;font-weight:600;padding:0 14px;cursor:pointer}
+#detail .tchip{display:inline-block;font-size:11px;padding:1px 9px;border-radius:12px;margin-right:6px;vertical-align:2px}
+#detail h4{font-size:16px;margin-bottom:6px}
+#detail .desc{color:#c9cfdd;font-size:13px;margin:6px 0}
+#detail .kv{font-size:12px;color:var(--muted);margin:2px 0}
+#detail .kv b{color:#c9cfdd;font-weight:500}
+.relrow{font-size:12px;color:#c9cfdd;background:var(--panel2);border-radius:6px;padding:4px 8px;margin:4px 0}
+.relrow em{color:var(--gold);font-style:normal;margin:0 4px}
+#chartwrap{flex:1;position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;min-height:560px;overflow:hidden}
+#chart{position:absolute;inset:0}
+.charttip{position:absolute;left:14px;bottom:12px;color:var(--muted);font-size:12px;pointer-events:none}
+/* ---------- 问答 ---------- */
+#tab-qa{max-width:900px;margin:0 auto}
+.modeline{font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:0 auto 10px;max-width:900px}
+.modeline.on{color:var(--gold);border-color:rgba(232,176,75,.5)}
+.chatbox{display:flex;flex-direction:column;gap:10px;min-height:70vh}
+#chatlog{display:flex;flex-direction:column;gap:12px;flex:1;overflow:auto;padding:4px 2px}
+.msg{max-width:86%;padding:10px 14px;border-radius:12px;font-size:14px}
+.msg.user{align-self:flex-end;background:#2a3a5e;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.bot .evi{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.msg.bot .evi .cap{font-size:11px;color:var(--muted);margin-bottom:6px}
+.echip{display:inline-block;font-size:12px;color:#cfe0ff;background:#203050;border:1px solid #33456e;border-radius:6px;padding:2px 9px;margin:2px 6px 2px 0}
+.echip em{color:var(--gold);font-style:normal}
+.msg.bot .note{margin-top:8px;font-size:11px;color:var(--muted)}
+.askrow{display:flex;gap:10px}
+.askrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px 14px;font-size:14px;outline:none}
+.askrow input:focus{border-color:var(--gold)}
+.askrow button{background:var(--gold);border:none;border-radius:10px;color:#1a1408;font-weight:700;padding:0 22px;cursor:pointer;font-size:14px}
+.suggs{display:flex;flex-wrap:wrap;gap:8px}
+.sugg{font-size:12px;color:#bcd0f5;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:5px 13px;cursor:pointer}
+.sugg:hover{border-color:var(--gold);color:var(--gold)}
+.rtbtn{display:inline-block;font-size:12px;color:var(--gold);background:none;border:1px solid rgba(232,176,75,.5);border-radius:8px;padding:4px 12px;margin-top:8px;cursor:pointer}
+/* ---------- 游线 ---------- */
+.rchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.rchip{font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid var(--line);color:var(--muted);cursor:pointer;background:var(--panel)}
+.rchip.on{color:var(--gold);border-color:var(--gold)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.rcard h4{font-size:15px;color:var(--text)}
+.rcard .meta{font-size:12px;color:var(--muted);margin:4px 0 8px}
+.rcard .meta b{color:var(--gold);font-weight:500}
+.rline{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0}
+.stop{font-size:12px;background:var(--panel2);border:1px solid var(--line);color:#d5e2ff;border-radius:8px;padding:4px 10px;cursor:pointer}
+.stop:hover{border-color:var(--gold);color:var(--gold)}
+.arrow{color:#55648a;font-size:12px}
+.rcard .blurb{font-size:12px;color:var(--muted)}
+/* ---------- 管线 ---------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.step .ic{font-size:20px}
+.step h4{font-size:13px;color:var(--gold);margin:6px 0 4px}
+.step p{font-size:12px;color:var(--muted)}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.stat b{font-size:24px;color:var(--gold)}
+.stat span{display:block;font-size:12px;color:var(--muted)}
+.assetnote{background:linear-gradient(90deg,rgba(232,176,75,.08),rgba(46,196,182,.06));border:1px solid rgba(232,176,75,.35);border-radius:12px;padding:14px 18px;font-size:13px;color:#d8c9a8}
+.assetnote b{color:var(--gold)}
+/* ---------- API ---------- */
+.ep{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.ep .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.method{font-size:11px;font-weight:700;color:#1a1408;background:var(--teal);border-radius:5px;padding:2px 8px}
+.path{font-family:Consolas,Monaco,monospace;font-size:13px;color:#d5e2ff}
+.ep input{background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;outline:none;font-family:Consolas,monospace;width:240px}
+.ep input:focus{border-color:var(--gold)}
+.run{margin-left:auto;background:var(--gold);border:none;border-radius:6px;color:#1a1408;font-weight:600;padding:6px 16px;cursor:pointer;font-size:12px}
+.ep .desc2{font-size:12px;color:var(--muted);margin:6px 0 10px}
+.ep pre{background:#0a0f1c;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12px;color:#9fd0a0;overflow:auto;max-height:280px;display:none;font-family:Consolas,Monaco,monospace}
+footer{border-top:1px solid var(--line);padding:10px 22px;color:#6b7891;font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>四川文旅<span class="gd">知识图谱</span>系统</h1>
+    <div class="sub">知识图谱 × GraphRAG × 知识服务 —— 对标同方知网「四川文旅知识图谱系统」方案的 MVP 演示</div>
+    <div class="biz"><span>TO B 定制开发</span><span class="hot">数据资产授权</span><span class="hot">API 订阅</span><span>共建分成</span></div>
+  </div>
+  <div class="badge">MVP v0.2 · GraphRAG 演示</div>
+</header>
+<nav>
+  <button class="tab active" data-tab="graph">图谱总览</button>
+  <button class="tab" data-tab="qa">智能问答</button>
+  <button class="tab" data-tab="routes">主题游线</button>
+  <button class="tab" data-tab="pipeline">数据与管线</button>
+  <button class="tab" data-tab="api">API 服务</button>
+</nav>
+<main>
+  <!-- 图谱总览 -->
+  <section id="tab-graph" class="panel active">
+    <aside>
+      <div class="card">
+        <h3>检索实体</h3>
+        <div class="searchrow">
+          <input id="q" list="names" placeholder="如：九寨沟 / 三星堆 / 诸葛亮"/>
+          <datalist id="names"></datalist>
+          <button onclick="locateFromInput()">定位</button>
+        </div>
+      </div>
+      <div class="card" id="detail">
+        <h3>实体详情</h3>
+        <div id="detailBody" class="desc">点击图谱中的节点，或用上方搜索框定位实体。</div>
+      </div>
+      <div class="card"><h3>图谱规模</h3><div id="gstats" class="kv"></div></div>
+    </aside>
+    <div id="chartwrap">
+      <div id="chart"></div>
+      <div class="charttip">滚轮缩放 · 拖拽移动 · 单击节点查看详情 · 图谱边缘数字为关系名称</div>
+    </div>
+  </section>
+
+  <!-- 智能问答 -->
+  <section id="tab-qa" class="panel">
+    <div id="modeline" class="modeline">模式检测中…</div>
+    <div class="chatbox">
+      <div id="chatlog"></div>
+      <div class="suggs" id="suggs"></div>
+      <div class="askrow">
+        <input id="ask" placeholder="问点什么：九寨沟在哪里？都江堰是谁修的？三星堆和金沙什么关系？推荐熊猫线路…" onkeydown="if(event.key==='Enter')askGo()"/>
+        <button onclick="askGo()">提问</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主题游线 -->
+  <section id="tab-routes" class="panel">
+    <div class="rchips" id="rchips"></div>
+    <div class="rgrid" id="rgrid"></div>
+  </section>
+
+  <!-- 数据与管线 -->
+  <section id="tab-pipeline" class="panel">
+    <div class="steps">
+      <div class="step"><div class="ic">📥</div><h4>① 多源采集</h4><p>景区官网、文旅政务公开数据、地方志、学术文献、门票手册（OCR）</p></div>
+      <div class="step"><div class="ic">🧠</div><h4>② 大模型抽取</h4><p>GLM / DeepSeek 类模型做 NER + 关系抽取，输出结构化三元组</p></div>
+      <div class="step"><div class="ic">🔗</div><h4>③ 知识融合</h4><p>实体对齐、消歧、别名归一 + 人工审核工作台</p></div>
+      <div class="step"><div class="ic">🗄️</div><h4>④ 图存储</h4><p>属性图模型入库：Neo4j / NebulaGraph / TuGraph</p></div>
+      <div class="step"><div class="ic">⚡</div><h4>⑤ GraphRAG 服务</h4><p>子图检索 + 向量召回 → 大模型生成「有据可依」的回答</p></div>
+      <div class="step"><div class="ic">🖥️</div><h4>⑥ 应用与 API</h4><p>问答导览、游线规划、可视化大屏、开放 API 订阅</p></div>
+    </div>
+    <div class="statgrid" id="pstats"></div>
+    <div class="assetnote"><b>数据资产运营提示：</b>本图谱构建完成后可作为<b>数据资产</b>进行评估入表与对外授权（对齐「数据资产授权」盈利线）；应用侧通过 API 网关按调用计量计费（对齐「API 订阅」）；与景区/博物馆共建的内容按协议<b>分成结算</b>。</div>
+  </section>
+
+  <!-- API 服务 -->
+  <section id="tab-api" class="panel">
+    <div class="ep"><div class="head"><span class="method">GET</span><span class="path">/v1/graph/stats</span><button class="run" onclick="runApi(0)">执行</button></div><div class="desc2">图谱概览统计 —— 供合作方巡检数据规模</div><pre id="out0"></pre></div>
+    <div class="ep"><div class="head"><span class="method">GET</span><span class="path">/v1/entities?type=</span><input id="ep1" value="museum"/><button class="run" onclick="runApi(1)">执行</button></div><div class="desc2">按类型取实体列表（scenic / museum / person / intangible / food / city）</div><pre id="out1"></pre></div>
+    <div class="ep"><div class="head"><span class="method">GET</span><span class="path">/v1/entities/</span><input id="ep2" value="jiuzhaigou"/><button class="run" onclick="runApi(2)">执行</button></div><div class="desc2">实体详情 + 关联三元组</div><pre id="out2"></pre></div>
+    <div class="ep"><div class="head"><span class="method">GET</span><span class="path">/v1/qa?q=</span><input id="ep3" value="九寨沟在哪里？"/><button class="run" onclick="runApi(3)">执行</button></div><div class="desc2">知识问答（返回答案 + 证据三元组，即 GraphRAG 效果演示）</div><pre id="out3"></pre></div>
+    <div class="ep"><div class="head"><span class="method">GET</span><span class="path">/v1/routes?theme=</span><input id="ep4" value="熊猫"/><button class="run" onclick="runApi(4)">执行</button></div><div class="desc2">按主题返回推荐线路</div><pre id="out4"></pre></div>
+  </section>
+</main>
+<footer>演示数据为人工整理的样例子集，仅供 MVP 技术验证与商业模式演示，不构成权威旅游信息（等级/遗产信息以官方公布为准）。生产环境需接入权威数据源 + 人工审核。</footer>
+<script src="data/graph.js"></script>
+<script>
+window.__ecReady = new Promise(function(resolve){
+  if(window.echarts) return resolve(true);
+  var s=document.createElement('script'); s.src='vendor/echarts.min.js';
+  s.onload=function(){resolve(true)};
+  s.onerror=function(){var c=document.createElement('script');c.src='https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js';c.onload=function(){resolve(true)};c.onerror=function(){resolve(false)};document.head.appendChild(c)};
+  document.head.appendChild(s);
+});
+
+/* ================= 数据层（由 data/graph.js 注入；生产环境中由抽取管线 + 图数据库提供） ================= */
+const KG=window.__KG__;
+const T=KG.types, N=KG.entities, E=KG.triples, ROUTES=KG.routes, THEME_KEYS=KG.theme_keys;
+
+/* ================= 工具函数 ================= */
+const byId={}; N.forEach(x=>byId[x.id]=x);
+const nameOf=id=>byId[id]?byId[id].n:id;
+function aliases(e){const a=[e.n]; if(e.a)a.push(...e.a); if(e.p&&e.p.alias)a.push(e.p.alias); return a;}
+function degree(id){return E.filter(x=>x[0]===id||x[1]===id).length;}
+function relOf(id){const r=[]; E.forEach(x=>{ if(x[0]===id)r.push({s:byId[x[0]].n,l:x[2],t:byId[x[1]].n,tid:x[1]}); else if(x[1]===id)r.push({s:byId[x[0]].n,l:x[2],t:byId[x[1]].n,tid:x[0]});}); return r;}
+function findEntity(str){
+  const names=[...N].sort((a,b)=>b.n.length-a.n.length).flatMap(e=>aliases(e).map(al=>({e,al,ln:al.length}))).sort((a,b)=>b.ln-a.ln);
+  const ms=[]; const seen=new Set();
+  names.forEach(({e,al})=>{ if(str.includes(al)&&!seen.has(e.id)){seen.add(e.id); ms.push(e);} });
+  return ms.slice(0,3);
+}
+function labelBetween(a,b){const e=E.find(x=>(x[0]===a&&x[1]===b)||(x[0]===b&&x[1]===a)); return e?e[2]:'关联';}
+function findPath(a,b){const adj={}; E.forEach(x=>{(adj[x[0]]=adj[x[0]]||[]).push(x[1]);(adj[x[1]]=adj[x[1]]||[]).push(x[0]);}); const q=[[a]]; const seen=new Set([a]); while(q.length){const p=q.shift(); const last=p[p.length-1]; if(last===b)return p; if(p.length>5)continue; (adj[last]||[]).forEach(nb=>{if(!seen.has(nb)){seen.add(nb); q.push([...p,nb]);}});} return null;}
+function pathText(p){let s=byId[p[0]].n; for(let i=0;i<p.length-1;i++)s+=` —${labelBetween(p[i],p[i+1])}→ ${byId[p[i+1]].n}`; return s;}
+
+/* ================= 问答引擎（离线规则版，生产环境为 GraphRAG+LLM） ================= */
+function runQA(q){
+  q=(q||'').trim();
+  const out={text:'',evidence:[],plain:''};
+  const evi=list=>list.slice(0,8).map(e=>({s:e[0],l:e[2],t:e[1]}));
+  if(!q)return out;
+  const matched=findEntity(q);
+
+  // 1. 线路意图
+  if(/(推荐|路线|线路|行程|怎么玩|攻略|几天|几日|游线)/.test(q)){
+    let theme=null;
+    outer: for(const [th,keys] of Object.entries(THEME_KEYS)){ if(keys.some(k=>q.includes(k))){theme=th; break outer;} }
+    const rs=theme?ROUTES.filter(r=>r.theme===theme):ROUTES;
+    let h=`为您检索到 <b style="color:var(--gold)">${rs.length}</b> 条${theme?`「${theme}」主题`:''}推荐线路：<br>`;
+    rs.forEach(r=>{h+=`<div style="margin-top:8px">📍 <b>${r.name}</b>（${r.days}·${r.season}）<br><span style="color:var(--muted);font-size:12px">${r.nodes.map(nameOf).join(' → ')}</span></div>`;});
+    out.text=h+`<div class="note">线路由图谱中「位于/邻近联动/同遗产地」等关系推导生成。</div>`;
+    out.plain=rs.map(r=>`${r.name}（${r.days}）：${r.nodes.map(nameOf).join(' → ')}`).join('\n');
+    return out;
+  }
+  // 2. 关系路径
+  if(matched.length>=2){
+    const p=findPath(matched[0].id,matched[1].id);
+    if(p){
+      const pe=[]; for(let i=0;i<p.length-1;i++)pe.push([p[i],p[i+1],labelBetween(p[i],p[i+1])]);
+      out.evidence=evi(pe);
+      out.text=`通过图谱路径检索，找到关联：<br><b style="color:#cfe0ff">${pathText(p)}</b><div class="note">共 ${p.length-1} 跳关系。</div>`;
+      out.plain=pathText(p);
+    }else{
+      out.text=`图谱中暂未检索到「${matched[0].n}」与「${matched[1].n}」的直接关联路径。`;
+      out.plain='未找到关联路径';
+    }
+    return out;
+  }
+  // 3. 世界遗产清单
+  if(/世界遗产|双遗|遗产/.test(q)){
+    const wh=N.filter(x=>x.p&&x.p.wh);
+    out.text=`四川的世界遗产（图谱中收录 ${wh.length} 处）：<br>`+wh.map(x=>`🏔️ <b>${x.n}</b> — ${x.p.wh}`).join('<br>');
+    out.evidence=evi(wh.map(x=>[x.id,x.c||'sichuan','位于']));
+    out.plain=wh.map(x=>`${x.n}：${x.p.wh}`).join('；');
+    return out;
+  }
+  // 4. 5A 清单
+  if(/5A|五A/.test(q)){
+    const l5=N.filter(x=>x.p&&x.p.level&&x.p.level.includes('5A'));
+    out.text=`图谱中收录的国家5A级景区（${l5.length}家）：`+l5.map(x=>`<b>${x.n}</b>`).join('、');
+    out.plain=l5.map(x=>x.n).join('、');
+    return out;
+  }
+  // 5. 非遗清单
+  if(/非遗|非物质文化遗产/.test(q)){
+    const it=N.filter(x=>x.t==='intangible');
+    out.text=`图谱中收录的非遗项目（${it.length}项）：`+it.map(x=>`<b>${x.n}</b>`).join('、');
+    out.evidence=evi(it.map(x=>[x.id,x.c,'流行于']));
+    out.plain=it.map(x=>x.n).join('、');
+    return out;
+  }
+  // 6. 美食
+  if(/美食|小吃|吃什么|好吃的/.test(q)){
+    const f=N.filter(x=>x.t==='food');
+    out.text=`图谱中的四川味道（${f.length}道）：`+f.map(x=>`<b>${x.n}</b>（${nameOf(x.c)}）`).join('、');
+    out.evidence=evi(f.map(x=>[x.id,x.c,'名产']));
+    out.plain=f.map(x=>`${x.n}（${nameOf(x.c)}）`).join('、');
+    return out;
+  }
+  // 7. 单实体问答
+  if(matched.length===1){
+    const e=matched[0];
+    const rel=relOf(e.id);
+    out.evidence=rel.slice(0,8).map(r=>({s:r.s,l:r.l,t:r.t}));
+    if(/在哪|哪里|位于|哪个市|哪个州|归属/.test(q)){
+      if(e.c){out.text=`<b>${e.n}</b>位于 <b style="color:var(--gold)">${nameOf(e.c)}</b>。`; out.plain=`${e.n}位于${nameOf(e.c)}`;}
+      else{out.text=`「${e.n}」的关联信息如下（见证据三元组）。`; out.plain=out.evidence.map(x=>`${x.s}-${x.l}->${x.t}`).join('；');}
+    }else if(/谁|修建|编写|写下|诗人|镇守/.test(q)){
+      // 与该实体直接相连的历史人物边（人物为起点）
+      const personEdges=[];
+      N.filter(x=>x.t==='person').forEach(x=>{
+        E.forEach(y=>{
+          if(y[0]===x.id&&y[1]===e.id)personEdges.push({s:byId[x.id].n,l:y[2],t:byId[y[1]].n});
+          else if(y[1]===x.id&&y[0]===e.id)personEdges.push({s:byId[x.id].n,l:y[2],t:byId[y[0]].n});
+        });
+      });
+      if(personEdges.length){
+        out.evidence=personEdges.slice(0,8).map(r=>({s:r.s,l:r.l,t:r.t}));
+        out.text=`与「${e.n}」相关的历史人物：<br>`+personEdges.slice(0,3).map(r=>`👤 <b>${r.s}</b> —${r.l}→ ${r.t}`).join('<br>');
+        out.plain=personEdges.slice(0,3).map(r=>`${r.s}-${r.l}->${r.t}`).join('；');
+      }
+      else out.text=entitySummary(e);
+    }else if(/门票|票价|多少钱|价格/.test(q)){
+      out.text=`演示数据未收录实时票价。建议查询景区官方渠道或文旅平台。<div class="note">生产版可接入实时票务 API，由 GraphRAG 融合回答。</div>`;
+      out.plain='演示数据未含实时票价';
+    }else{
+      out.text=entitySummary(e);
+      out.plain=e.d;
+    }
+    return out;
+  }
+  // 8. 兜底
+  out.text=`这个问题超出了演示图谱的覆盖范围。<br>试试问我：<span style="color:#bcd0f5">九寨沟在哪里？/ 都江堰是谁修的？/ 三星堆和金沙什么关系？/ 推荐三国线路 / 四川的世界遗产有哪些？</span>`;
+  out.plain='超出图谱覆盖范围';
+  return out;
+}
+function entitySummary(e){
+  const rel=relOf(e.id);
+  let h=`<b style="color:var(--gold)">${e.n}</b> <span style="font-size:12px;color:var(--muted)">[${T[e.t].l}]</span><br>${e.d}`;
+  if(e.c)h+=`<br>📍 位于：${nameOf(e.c)}`;
+  if(e.p){Object.entries(e.p).forEach(([k,v])=>{if(k!=='alias')h+=`<br>▪ ${ {level:'等级',wh:'世界遗产',season:'最佳季节'}[k]||k }：${v}`;});}
+  if(rel.length)h+=`<br>🔗 关联：`+rel.slice(0,6).map(r=>`<b>${r.t}</b>（${r.l.replace('←','')}）`).join('、');
+  const rs=ROUTES.filter(r=>r.nodes.includes(e.id));
+  if(rs.length)h+=`<br><button class="rtbtn" onclick="switchTab('routes')">含于主题线路：${rs.map(r=>r.name).join('、')} → 查看游线</button>`;
+  return h;
+}
+
+/* ================= 图谱可视化 ================= */
+let chart=null, catIdx={};
+function initGraph(){
+  const cats=Object.entries(T).map(([k,v],i)=>{catIdx[k]=i; return {name:v.l, itemStyle:{color:v.c}};});
+  const nodes=N.map(e=>{
+    const dg=degree(e.id);
+    const size=e.t==='region'?40:e.t==='city'?24:Math.min(30,12+dg*1.6);
+    return {id:e.id,name:e.n,category:catIdx[e.t],symbolSize:size,value:T[e.t].l,desc:e.d,itemStyle:{color:T[e.t].c}};
+  });
+  const links=E.map(x=>({source:x[0],target:x[1],value:x[2],sName:byId[x[0]].n,tName:byId[x[1]].n}));
+  chart=echarts.init(document.getElementById('chart'),null,{renderer:'canvas'});
+  chart.setOption({
+    backgroundColor:'transparent',
+    legend:{data:cats.map(c=>c.name),top:10,right:16,textStyle:{color:'#98a5bd',fontSize:12},inactiveColor:'#3a4560'},
+    tooltip:{backgroundColor:'#1b2440',borderColor:'#28344f',textStyle:{color:'#e9e7e2',fontSize:12},
+      formatter:p=>p.dataType==='node'?`<b>${p.name}</b>（${p.data.value}）<br>${p.data.desc||''}`:`${p.data.sName} — ${p.data.value} → ${p.data.tName}`},
+    series:[{type:'graph',layout:'force',roam:true,draggable:true,categories:cats,
+      force:{repulsion:360,edgeLength:[70,150],gravity:.12},
+      label:{show:true,color:'#e9e7e2',fontSize:11,position:'right'},
+      edgeLabel:{show:true,fontSize:10,color:'#7f92b5',formatter:p=>p.data.value},
+      edgeSymbol:['none','arrow'],edgeSymbolSize:7,
+      lineStyle:{color:'#31415f',width:1,opacity:.85,curveness:.12},
+      emphasis:{focus:'adjacency',itemStyle:{shadowBlur:18,shadowColor:'rgba(232,176,75,.55)'},lineStyle:{width:2.5,color:'#e8b04b'},edgeLabel:{fontSize:11,color:'#e8b04b'}},
+      data:nodes,links:links}]
+  });
+  chart.on('click',p=>{if(p.dataType==='node')showDetail(p.data.id);});
+  window.addEventListener('resize',()=>chart&&chart.resize());
+}
+function showDetail(id){
+  const e=byId[id]; if(!e)return;
+  const rel=relOf(id);
+  let h=`<h4>${e.n} <span class="tchip" style="color:${T[e.t].c};border:1px solid ${T[e.t].c}55">${T[e.t].l}</span></h4>`;
+  h+=`<div class="desc">${e.d}</div>`;
+  if(e.c)h+=`<div class="kv">📍 <b>${nameOf(e.c)}</b></div>`;
+  if(e.p)Object.entries(e.p).forEach(([k,v])=>{if(k!=='alias')h+=`<div class="kv">▪ ${ {level:'等级',wh:'世界遗产',season:'最佳季节'}[k]||k }：<b>${v}</b></div>`;});
+  if(rel.length){h+=`<div style="margin-top:8px">`+rel.slice(0,8).map(r=>`<div class="relrow" style="cursor:pointer" onclick="showDetail('${r.tid}')">${r.s}<em>${r.l}</em>${r.t}</div>`).join('')+`</div>`;}
+  document.getElementById('detailBody').innerHTML=h;
+}
+function locateFromInput(){
+  const q=document.getElementById('q').value.trim(); if(!q)return;
+  const e=N.find(x=>x.n===q||x.n.includes(q)||(x.p&&x.p.alias===q))||findEntity(q)[0];
+  if(e){showDetail(e.id); chart&&chart.dispatchAction({type:'highlight',seriesIndex:0,name:e.n}); chart&&chart.dispatchAction({type:'showTip',seriesIndex:0,name:e.n});}
+}
+function fillSearch(){document.getElementById('names').innerHTML=N.map(e=>`<option value="${e.n}">`).join('');}
+function fillGstats(){
+  const c={}; N.forEach(e=>c[T[e.t].l]=(c[T[e.t].l]||0)+1);
+  document.getElementById('gstats').innerHTML=`节点 <b style="color:var(--gold)">${N.length}</b> · 关系 <b style="color:var(--gold)">${E.length}</b> · 线路 <b style="color:var(--gold)">${ROUTES.length}</b><br>`+Object.entries(c).map(([k,v])=>`${k} ${v}`).join(' / ');
+  document.getElementById('pstats').innerHTML=[['实体节点',N.length],['关系三元组',E.length],['主题线路',ROUTES.length],['覆盖市州',13],['世界遗产',5],['非遗项目',N.filter(x=>x.t==='intangible').length]].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
+}
+
+/* ================= 问答 UI ================= */
+const API_BASE=(location.protocol==='file:')?'http://127.0.0.1:8765':'';
+let QA_MODE='rule';
+async function detectMode(){
+  const el=document.getElementById('modeline');
+  try{
+    const r=await fetch(API_BASE+'/api/health',{signal:AbortSignal.timeout(2500)});
+    if(r.ok){const j=await r.json(); if(j.llm_configured){QA_MODE='llm'; el.textContent='当前模式：LLM 生成（'+(j.model||'已配置模型')+'）'; el.classList.add('on'); return;}}
+  }catch(e){}
+  el.textContent='当前模式：图谱规则引擎（离线演示 · 运行 backend/ 可接入真实大模型）';
+}
+const SUGGS=['九寨沟在哪里？','都江堰是谁修的？','三星堆和金沙什么关系？','推荐熊猫主题线路','四川的世界遗产有哪些','有哪些非遗','成都有什么美食'];
+function initChat(){
+  document.getElementById('suggs').innerHTML=SUGGS.map(s=>`<span class="sugg" onclick="quickAsk(this)">${s}</span>`).join('');
+  botSay(`你好！我是「四川文旅知识图谱」的问答助手 🏔️<br>我的每个回答都会给出<b style="color:var(--gold)">检索到的证据三元组</b>——这正是 GraphRAG「有据可依」的核心：先查图谱、再生成回答。<div class="note">当前为离线规则引擎演示；配置 backend/.env 后将自动切换为「图谱检索 + LLM 生成」。</div>`);
+}
+function quickAsk(el){document.getElementById('ask').value=el.textContent; askGo();}
+async function askGo(){
+  const i=document.getElementById('ask'); const q=i.value.trim(); if(!q)return; i.value=''; userSay(q);
+  if(QA_MODE==='llm'){
+    try{
+      const r=await fetch(API_BASE+'/api/qa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q}),signal:AbortSignal.timeout(45000)});
+      if(r.ok){const j=await r.json(); botSay(j.answer,j.evidence,j.mode); return;}
+    }catch(e){}
+    const fb=runQA(q);
+    botSay(fb.text+'<div class="note">⚠️ LLM 服务暂不可用，已回退规则引擎。</div>',fb.evidence);
+    return;
+  }
+  setTimeout(()=>{const r=runQA(q); botSay(r.text,r.evidence);},260);
+}
+function userSay(t){const l=document.getElementById('chatlog'); l.insertAdjacentHTML('beforeend',`<div class="msg user">${t.replace(/</g,'&lt;')}</div>`); l.scrollTop=l.scrollHeight;}
+function botSay(t,evi,mode){const l=document.getElementById('chatlog');
+  const label=mode==='llm'?'GraphRAG 检索 · LLM 生成':(mode==='llm-mock'?'GraphRAG 检索 · 模拟 LLM（未配置真实 Key）':'图谱检索 · 规则引擎演示');
+  let h=`<div class="msg bot">${t}`;
+  if(evi&&evi.length){h+=`<div class="evi"><div class="cap">🔍 检索到的证据三元组（${evi.length}条）：</div>`+evi.map(e=>`<span class="echip">${e.s} <em>${e.l}</em> ${e.t}</span>`).join('')+`</div>`;}
+  h+=`<div class="note">⚙️ ${label}</div></div>`;
+  l.insertAdjacentHTML('beforeend',h); l.scrollTop=l.scrollHeight;}
+/* ================= 游线 ================= */
+let curTheme='全部';
+function renderRoutes(){
+  const themes=['全部',...new Set(ROUTES.map(r=>r.theme))];
+  document.getElementById('rchips').innerHTML=themes.map(t=>`<span class="rchip ${t===curTheme?'on':''}" onclick="setTheme('${t}')">${t}</span>`).join('');
+  const rs=curTheme==='全部'?ROUTES:ROUTES.filter(r=>r.theme===curTheme);
+  document.getElementById('rgrid').innerHTML=rs.map(r=>`<div class="rcard"><h4>🧭 ${r.name}</h4><div class="meta"><b>${r.days}</b> · 最佳季节：${r.season} · 主题：${r.theme}</div><div class="rline">${r.nodes.map((n,i)=>(i?'<span class="arrow">→</span>':'')+`<span class="stop" onclick="jumpTo('${n}')">${nameOf(n)}</span>`).join('')}</div><div class="blurb">${r.blurb}</div></div>`).join('');
+}
+function setTheme(t){curTheme=t; renderRoutes();}
+function jumpTo(id){switchTab('graph'); setTimeout(()=>showDetail(id),80);}
+
+/* ================= API 演示 ================= */
+function apiJson(fn){try{return JSON.stringify(fn(),null,2);}catch(e){return JSON.stringify({error:String(e)},null,2);}}
+function runApi(n){
+  const outs=[0,1,2,3,4].map(i=>document.getElementById('out'+i));
+  const show=(i,obj)=>{outs[i].style.display='block'; outs[i].textContent=obj;};
+  if(n===0){const c={}; N.forEach(e=>c[T[e.t].l]=(c[T[e.t].l]||0)+1); show(0,apiJson(()=>({path:'/v1/graph/stats',entities:N.length,relations:E.length,routes:ROUTES.length,byType:c}))); }
+  if(n===1){const t=document.getElementById('ep1').value.trim(); const list=N.filter(e=>T[e.t].l===t||e.t===t).map(e=>({id:e.id,name:e.n})); show(1,apiJson(()=>({path:`/v1/entities?type=${t}`,count:list.length,items:list}))); }
+  if(n===2){const id=document.getElementById('ep2').value.trim(); const e=byId[id]; show(2,apiJson(()=>e?{path:`/v1/entities/${id}`,entity:{id:e.id,name:e.n,type:T[e.t].l,desc:e.d},relations:relOf(id).slice(0,10).map(r=>[r.s,r.l,r.t])}:{error:'entity not found'})); }
+  if(n===3){const q=document.getElementById('ep3').value.trim(); const r=runQA(q); show(3,apiJson(()=>({path:`/v1/qa?q=${q}`,answer:r.plain||'（复杂答案，见文本字段）',text:r.text.replace(/<[^>]+>/g,' '),evidence:r.evidence}))); }
+  if(n===4){const th=document.getElementById('ep4').value.trim(); const rs=ROUTES.filter(r=>r.theme.includes(th)); show(4,apiJson(()=>({path:`/v1/routes?theme=${th}`,count:rs.length,routes:rs.map(r=>({name:r.name,days:r.days,stops:r.nodes.map(nameOf)}))}))); }
+}
+
+/* ================= Tab ================= */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if(name==='graph'&&chart)chart.resize();
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+/* ================= 启动 ================= */
+initChat(); renderRoutes(); fillSearch(); fillGstats(); detectMode();
+window.__ecReady.then(ok=>{ if(ok)initGraph(); else document.getElementById('chartwrap').insertAdjacentHTML('beforeend','<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#98a5bd">可视化库加载失败（离线且无本地 echarts.min.js）</div>'); });
+</script>
+</body>
+</html>
